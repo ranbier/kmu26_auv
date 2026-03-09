@@ -66,8 +66,11 @@ def _bringup_can(name: str, bitrate: int | None = None, use_sudo: bool = True, l
     ok = False
     cmds = []
     if bitrate:
-        cmds += [
-            [_IP_CMD, "link", "set", name, "down"],
+        cmds.append([_IP_CMD, "link", "set", name, "down"])
+
+        # Some adapters/drivers (e.g. certain gs_usb firmwares) don't support
+        # berr-reporting/restart-ms. Try full options first, then fallback.
+        type_cmds = [
             [
                 _IP_CMD,
                 "link",
@@ -82,7 +85,19 @@ def _bringup_can(name: str, bitrate: int | None = None, use_sudo: bool = True, l
                 "restart-ms",
                 "100",
             ],
+            [_IP_CMD, "link", "set", name, "type", "can", "bitrate", str(bitrate)],
         ]
+        type_ok = False
+        for tc in type_cmds:
+            r = _run(tc)
+            if r.returncode != 0 and use_sudo:
+                r = _run(["sudo", "-n", *tc])
+            if r.returncode == 0:
+                type_ok = True
+                break
+            if logger is not None:
+                logger.warn(f"type setup failed: {' '.join(tc)} -> {r.stderr.strip()}")
+        ok = ok or type_ok
     cmds += [[_IP_CMD, "link", "set", name, "up"]]
 
     for c in cmds:
@@ -110,7 +125,8 @@ class Bridge(Node):
         # ROS 2 params
         self.declare_parameter("can_interface", "can0")
         self.declare_parameter("local_node_id", 127)
-        self.declare_parameter("target_node_id", 125)
+        # Empty/0/-1 disables source filtering and accepts BatteryInfo from any node ID.
+        self.declare_parameter("target_node_id", "")
 
         self.declare_parameter("auto_bringup", True)
         self.declare_parameter("bitrate", 0)
@@ -128,7 +144,7 @@ class Bridge(Node):
 
         target_param = self.get_parameter("target_node_id").value
         target_text = str(target_param).strip() if target_param is not None else ""
-        self.target_nid = int(target_text) if target_text else None
+        self.target_nid = self._parse_target_node_id(target_text)
 
         self.auto_bringup = bool(self.get_parameter("auto_bringup").value)
         bitrate_val = int(self.get_parameter("bitrate").value)
@@ -143,8 +159,8 @@ class Bridge(Node):
         self.save_params = bool(self.get_parameter("save_params").value)
 
         # Publishers are created even when CAN is not ready yet.
-        self.pub_sensor = self.create_publisher(BatteryState, "battery", 10)
-        self.pub_mavros = self.create_publisher(BatteryState, "mavros/battery", 10)
+        self.pub_sensor = self.create_publisher(BatteryState, "/battery", 10)
+        self.pub_mavros = self.create_publisher(BatteryState, "/mavros/battery", 10)
 
         self.dronecan_node = None
         self.mon = None
@@ -170,6 +186,9 @@ class Bridge(Node):
         self._last_transfer_err_log_t = 0.0
         self._transfer_err_log_interval = 5.0
         self._transfer_err_recover_threshold = 10
+        self._rx_count = 0
+        self._last_rx_monotonic = time.monotonic()
+        self.create_timer(5.0, self._log_rx_health)
 
         # spin + watchdog background threads
         threading.Thread(target=self.spin_dronecan, daemon=True).start()
@@ -179,6 +198,45 @@ class Bridge(Node):
             f"DroneCAN->ROS2 Battery bridge on {self.iface} "
             f"(local_nid={self.local_nid}, target={self.target_nid})"
         )
+        self.get_logger().info(
+            f"Publishing BatteryState to {self.pub_sensor.topic_name} and {self.pub_mavros.topic_name}"
+        )
+        if self.target_nid is None:
+            self.get_logger().info(
+                "Battery source filter disabled. Accepting BatteryInfo from any DroneCAN node ID."
+            )
+        else:
+            self.get_logger().info(
+                f"Battery source filter enabled. target_node_id={self.target_nid}"
+            )
+
+    @staticmethod
+    def _parse_target_node_id(text: str) -> int | None:
+        if not text:
+            return None
+        try:
+            nid = int(text)
+        except (TypeError, ValueError):
+            return None
+        # Treat 0/-1 as wildcard for convenience.
+        if nid <= 0:
+            return None
+        return nid
+
+    def _log_rx_health(self):
+        elapsed = time.monotonic() - self._last_rx_monotonic
+        if self._rx_count == 0:
+            self.get_logger().warn(
+                "No DroneCAN BatteryInfo received yet. "
+                "If topics exist but stay empty, verify battery node is publishing "
+                "uavcan.equipment.power.BatteryInfo on this CAN bus."
+            )
+            return
+        if elapsed > 10.0:
+            self.get_logger().warn(
+                f"BatteryInfo stream stalled for {elapsed:.1f}s "
+                f"(received {self._rx_count} total frames)."
+            )
 
     def _try_open_dronecan(self, log_on_fail: bool = False) -> bool:
         if self.dronecan_node is not None:
@@ -372,6 +430,9 @@ class Bridge(Node):
         if self.target_nid is not None and e.transfer.source_node_id != self.target_nid:
             return
 
+        self._rx_count += 1
+        self._last_rx_monotonic = time.monotonic()
+
         m = e.message
         voltage = self._to_float(getattr(m, "voltage", float("nan")))
         current = self._to_float(getattr(m, "current", float("nan")))
@@ -398,9 +459,18 @@ def main():
     node = Bridge()
     try:
         rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
     finally:
-        node.destroy_node()
-        rclpy.shutdown()
+        try:
+            node.destroy_node()
+        except Exception:
+            pass
+        try:
+            if rclpy.ok():
+                rclpy.shutdown()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
