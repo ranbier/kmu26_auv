@@ -1,5 +1,5 @@
 Panels:
-  - Class: rviz/Displays
+  - Class: rviz_common/Displays
     Help Height: 84
     Name: Displays
     Property Tree Widget:
@@ -10,21 +10,20 @@ Panels:
         - /TF1/Frames1
         - /RobotModel1
         - /Odometry1
+        - /Odometry1/Shape1
+        - /Odometry1/Covariance1
       Splitter Ratio: 0.5
-    Tree Height: 606
-Preferences:
-  PromptSaveOnExit: true
-Toolbars:
-  toolButtonStyle: 2
+    Tree Height: 847
 Visualization Manager:
   Class: ""
   Displays:
     - Alpha: 0.5
-      Class: rviz/Grid
+      Cell Size: 1
+      Class: rviz_default_plugins/Grid
       Color: 160; 160; 164
       Enabled: true
       Line Style:
-        Line Width: 0.03
+        Line Width: 0.029999999329447746
         Value: Lines
       Name: Grid
       Normal Cell Count: 0
@@ -36,80 +35,237 @@ Visualization Manager:
       Plane Cell Count: 10
       Reference Frame: <Fixed Frame>
       Value: true
-    - Class: rviz/TF
+    - Class: rviz_default_plugins/TF
       Enabled: true
       Frame Timeout: 15
       Frames:
         All Enabled: true
+        auv_link:
+          Value: true
+        bar30_link:
+          Value: true
         base_link:
+          Value: true
+        base_link_frd:
+          Value: true
+        camera_accel_frame:
+          Value: true
+        camera_accel_optical_frame:
+          Value: true
+        camera_aligned_depth_to_color_frame:
+          Value: true
+        camera_color_frame:
+          Value: true
+        camera_color_optical_frame:
+          Value: true
+        camera_depth_frame:
+          Value: true
+        camera_depth_optical_frame:
+          Value: true
+        camera_gyro_frame:
+          Value: true
+        camera_imu_optical_frame:
+          Value: true
+        camera_infra1_frame:
+          Value: true
+        camera_infra1_optical_frame:
+          Value: true
+        camera_infra2_frame:
+          Value: true
+        camera_infra2_optical_frame:
+          Value: true
+        camera_link:
+          Value: true
+        dvl:
+          Value: true
+        dvl_link:
+          Value: true
+        imu_link:
           Value: true
         map:
           Value: true
-      Marker Scale: 0.3
+        map_ned:
+          Value: true
+        odom:
+          Value: true
+        odom_ned:
+          Value: true
+        stereo_left:
+          Value: true
+        stereo_left_optical:
+          Value: true
+        stereo_right:
+          Value: true
+        stereo_right_optical:
+          Value: true
+      Marker Scale: 0.30000001192092896
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
         map:
+          map_ned:
+            {}
+        odom:
           base_link:
+            auv_link:
+              {}
+            bar30_link:
+              {}
+            base_link_frd:
+              {}
+            camera_link:
+              camera_accel_frame:
+                camera_accel_optical_frame:
+                  {}
+              camera_aligned_depth_to_color_frame:
+                {}
+              camera_color_frame:
+                camera_color_optical_frame:
+                  {}
+              camera_depth_frame:
+                camera_depth_optical_frame:
+                  {}
+              camera_gyro_frame:
+                camera_imu_optical_frame:
+                  {}
+              camera_infra1_frame:
+                camera_infra1_optical_frame:
+                  {}
+              camera_infra2_frame:
+                camera_infra2_optical_frame:
+                  {}
+              stereo_left:
+                stereo_left_optical:
+                  {}
+              stereo_right:
+                stereo_right_optical:
+                  {}
+            dvl:
+              dvl_link:
+                {}
+            imu_link:
+              {}
+          odom_ned:
             {}
       Update Interval: 0
       Value: true
-    - Class: rviz/RobotModel
+    - Alpha: 1
+      Class: rviz_default_plugins/RobotModel
+      Collision Enabled: false
       Description File: ""
       Description Source: Topic
       Description Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
         Value: /robot_description
       Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        auv_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+      Mass Properties:
+        Inertia: false
+        Mass: false
       Name: RobotModel
+      TF Prefix: ""
       Update Interval: 0
       Value: true
       Visual Enabled: true
-    - Alpha: 1
-      Class: rviz/Odometry
-      Color: 255; 25; 0
+    - Angle Tolerance: 0.10000000149011612
+      Class: rviz_default_plugins/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
       Enabled: true
-      Keep: 100
-      Length: 1
+      Keep: 1
       Name: Odometry
-      Position Use Topic: true
+      Position Tolerance: 0.10000000149011612
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.10000000149011612
+        Color: 255; 25; 0
+        Head Length: 0.30000001192092896
+        Head Radius: 0.10000000149011612
+        Shaft Length: 1
+        Shaft Radius: 0.05000000074505806
+        Value: Arrow
       Topic:
-        Value: /mavros/local_position/odom
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /dvl/odometry
       Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: map  # ★★★ 중요: Fixed Frame을 'map'으로 설정
+    Fixed Frame: odom
     Frame Rate: 30
   Name: root
   Tools:
-    - Class: rviz/Interact
+    - Class: rviz_default_plugins/Interact
       Hide Inactive Objects: true
-    - Class: rviz/MoveCamera
-    - Class: rviz/Select
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
   Value: true
   Views:
     Current:
-      Class: rviz/Orbit
-      Distance: 17.5684
+      Class: rviz_default_plugins/Orbit
+      Distance: 12.95468521118164
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.05999999865889549
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
       Focal Point:
-        X: -0.638515
-        Y: -2.31623
-        Z: 1.14917
-      Name: Orbit (rviz)
-      Near Clip Distance: 0.01
-      Pitch: 0.609797
+        X: -1.674937129020691
+        Y: -0.5968903303146362
+        Z: 2.2756083011627197
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
+      Pitch: -0.06520243734121323
+      Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.28302
+      Yaw: 3.5442986488342285
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 825
+  Height: 1082
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000001000000000000021300000305fc0200000008fb000000100044006900730070006c006100790073010000003d00000305000000c900fffffffb0000001e0054006f006f006c002000500072006f00700065007200740069006500730000000000ffffffffffff000000000000
-  Width: 1211
-  X: 1354
-  Y: 76
+  QMainWindow State: 000000ff00000000fd000000010000000000000156000003e0fc0200000001fb000000100044006900730070006c006100790073010000003d000003e0000000c900ffffff00000548000003e000000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Width: 1700
+  X: 2095
+  Y: 31
