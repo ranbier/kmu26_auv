@@ -61,10 +61,8 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        auv_link:
-          Value: true
         base_link:
-          Value: false
+          Value: true
         base_link_frd:
           Value: false
         camera_accel_frame:
@@ -96,9 +94,13 @@ Visualization Manager:
         camera_link:
           Value: false
         dvl:
-          Value: false
-        map:
           Value: true
+        fcu_link:
+          Value: true
+        imu_link:
+          Value: true
+        map:
+          Value: false
         map_ned:
           Value: false
         odom:
@@ -134,17 +136,21 @@ Visualization Manager:
             camera_infra2_optical_frame:
               {}
         map:
-          base_link:
-            base_link_frd:
-              {}
           map_ned:
             {}
-          odom:
-            auv_link:
-              dvl:
-                {}
-            odom_ned:
+        odom:
+          base_link:
+            depth_link:
               {}
+            dvl:
+              {}
+            fcu_link:
+              base_link_frd:
+                {}
+              imu_link:
+                {}
+          odom_ned:
+            {}
       Update Interval: 0
       Value: true
     - Alpha: 0.8999999761581421
@@ -157,7 +163,7 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        auv_link:
+        base_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -180,7 +186,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: map
+    Fixed Frame: odom
     Frame Rate: 30
   Name: root
   Tools:

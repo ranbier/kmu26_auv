@@ -1,4 +1,5 @@
 #include <memory>
+#include <string>
 #include <rclcpp/rclcpp.hpp>
 #include <mavros_msgs/msg/vfr_hud.hpp>
 #include <sensor_msgs/msg/fluid_pressure.hpp>
@@ -7,6 +8,8 @@ class VFRHudPressureNode : public rclcpp::Node {
 public:
     VFRHudPressureNode()
     : Node("vfr_passthrough_converter") {
+        frame_id_ = this->declare_parameter<std::string>("frame_id", "depth_link");
+
         pressure_pub = this->create_publisher<sensor_msgs::msg::FluidPressure>(
             "/mavros/imu/atm_pressure", 
             rclcpp::QoS(10)
@@ -31,7 +34,7 @@ private:
         sensor_msgs::msg::FluidPressure pressure_msg;
 
         pressure_msg.header.stamp = msg->header.stamp;
-        pressure_msg.header.frame_id = "base_link";
+        pressure_msg.header.frame_id = frame_id_;
 
         pressure_msg.fluid_pressure = altitude_value;
 
@@ -39,6 +42,7 @@ private:
 
         pressure_pub->publish(pressure_msg);
     }
+    std::string frame_id_;
     rclcpp::Publisher<sensor_msgs::msg::FluidPressure>::SharedPtr pressure_pub;
     rclcpp::Subscription<mavros_msgs::msg::VfrHud>::SharedPtr sub;
 

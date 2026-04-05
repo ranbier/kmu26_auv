@@ -15,6 +15,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(mavros_msgs REQUIRED)
+find_package(dvl_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -34,6 +35,9 @@ endif()
 add_executable(cam2baselink_static_tf src/cam2baselink_static_tf.cpp)
 ament_target_dependencies(cam2baselink_static_tf rclcpp geometry_msgs tf2 tf2_ros)
 
+add_executable(tf_broadcaster src/tf_broadcaster.cpp)
+ament_target_dependencies(tf_broadcaster rclcpp geometry_msgs tf2 tf2_ros)
+
 add_executable(joy2mavros src/joy2mavros.cpp)
 ament_target_dependencies(joy2mavros rclcpp sensor_msgs mavros_msgs)
 
@@ -43,25 +47,41 @@ ament_target_dependencies(odom2mavros rclcpp nav_msgs geometry_msgs tf2 tf2_geom
 add_executable(vfr2atm_pressure src/vfr2atm_pressure.cpp)
 ament_target_dependencies(vfr2atm_pressure rclcpp mavros_msgs sensor_msgs)
 
+add_executable(dvl_to_twist_bridge src/dvl_to_twist_bridge.cpp)
+ament_target_dependencies(dvl_to_twist_bridge rclcpp geometry_msgs dvl_msgs)
+
+add_executable(pressure_to_depth_pose src/pressure_to_depth_pose.cpp)
+ament_target_dependencies(pressure_to_depth_pose rclcpp geometry_msgs sensor_msgs)
+
+add_executable(localization_debug src/localization_debug.cpp)
+ament_target_dependencies(localization_debug rclcpp geometry_msgs nav_msgs)
+
 add_executable(guided_control src/guided_control.cpp)
 ament_target_dependencies(guided_control rclcpp geometry_msgs tf2 mavros_msgs)
 
 install(TARGETS
   cam2baselink_static_tf
+  tf_broadcaster
   joy2mavros
   odom2mavros
   vfr2atm_pressure
+  dvl_to_twist_bridge
+  pressure_to_depth_pose
+  localization_debug
   guided_control
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(PROGRAMS
+  scripts/dvl_setup.sh
   scripts/dronecan2mavros_battery.py
+  scripts/dronecan2mavros_battery_v2.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY
   launch
+  config
   DESTINATION share/${PROJECT_NAME}
 )
 
