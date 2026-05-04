@@ -20,8 +20,8 @@ publish_command set_config acoustic_enabled true
 sleep 0.5
 publish_command set_config range_mode auto
 sleep 0.5
-publish_command calibrate_gyro
-sleep 0.5
+# publish_command calibrate_gyro
+# sleep 0.5
 publish_command reset_dead_reckoning
 
 echo "[dvl_setup] completed on ${topic}"
