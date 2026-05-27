@@ -298,7 +298,7 @@ def generate_launch_description() -> LaunchDescription:
         # 5) DroneCAN battery bridge
         Node(
             package="hit25_auv_ros2",
-            executable="dronecan2mavros_battery.py",
+            executable="dronecan2mavros_battery_v2.py",
             name="dronecan2mavros_battery",
             output="screen",
             respawn=True,
