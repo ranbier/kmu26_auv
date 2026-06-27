@@ -24,9 +24,23 @@ def generate_launch_description() -> LaunchDescription:
     base_frame = LaunchConfiguration("base_frame")
     min_translation = LaunchConfiguration("min_translation")
     max_poses = LaunchConfiguration("max_poses")
+    use_buoy_control = LaunchConfiguration("use_buoy_control")
+    buoy_topic = LaunchConfiguration("buoy_topic")
+    buoy_arrival_radius = LaunchConfiguration("buoy_arrival_radius")
+    use_buoy_z = LaunchConfiguration("use_buoy_z")
+    buoy_hold_mode = LaunchConfiguration("buoy_hold_mode")
+    buoy_guided_mode = LaunchConfiguration("buoy_guided_mode")
 
     rov_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(rov_launch_file),
+        launch_arguments={
+            "use_buoy_control": use_buoy_control,
+            "buoy_topic": buoy_topic,
+            "buoy_arrival_radius": buoy_arrival_radius,
+            "use_buoy_z": use_buoy_z,
+            "buoy_hold_mode": buoy_hold_mode,
+            "buoy_guided_mode": buoy_guided_mode,
+        }.items(),
     )
 
     localization_debug_node = Node(
@@ -55,6 +69,12 @@ def generate_launch_description() -> LaunchDescription:
             DeclareLaunchArgument("base_frame", default_value="base_link"),
             DeclareLaunchArgument("min_translation", default_value="0.0"),
             DeclareLaunchArgument("max_poses", default_value="5000"),
+            DeclareLaunchArgument("use_buoy_control", default_value="false"),
+            DeclareLaunchArgument("buoy_topic", default_value="/buoy"),
+            DeclareLaunchArgument("buoy_arrival_radius", default_value="0.10"),
+            DeclareLaunchArgument("use_buoy_z", default_value="false"),
+            DeclareLaunchArgument("buoy_hold_mode", default_value="ALT_HOLD"),
+            DeclareLaunchArgument("buoy_guided_mode", default_value="GUIDED"),
             LogInfo(
                 msg=[
                     "[localization_test] Starting rov_start. Waiting ",

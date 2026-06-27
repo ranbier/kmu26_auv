@@ -105,6 +105,12 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument("pressure_topic", default_value="/mavros/imu/static_pressure"),
         DeclareLaunchArgument("pressure_input_mode", default_value="pressure_pa"),
         DeclareLaunchArgument("fluid_density", default_value="1000.0"),
+        DeclareLaunchArgument("use_buoy_control", default_value="false"),
+        DeclareLaunchArgument("buoy_topic", default_value="/buoy"),
+        DeclareLaunchArgument("buoy_arrival_radius", default_value="0.10"),
+        DeclareLaunchArgument("use_buoy_z", default_value="false"),
+        DeclareLaunchArgument("buoy_hold_mode", default_value="ALT_HOLD"),
+        DeclareLaunchArgument("buoy_guided_mode", default_value="GUIDED"),
     ]
 
     fcu_url = LaunchConfiguration("fcu_url")
@@ -120,6 +126,12 @@ def generate_launch_description() -> LaunchDescription:
     dronecan_python = LaunchConfiguration("dronecan_python")
     use_external_baro_bridge = LaunchConfiguration("use_external_baro_bridge")
     external_baro_connection_url = LaunchConfiguration("external_baro_connection_url")
+    use_buoy_control = LaunchConfiguration("use_buoy_control")
+    buoy_topic = LaunchConfiguration("buoy_topic")
+    buoy_arrival_radius = LaunchConfiguration("buoy_arrival_radius")
+    use_buoy_z = LaunchConfiguration("use_buoy_z")
+    buoy_hold_mode = LaunchConfiguration("buoy_hold_mode")
+    buoy_guided_mode = LaunchConfiguration("buoy_guided_mode")
 
     base_frame = LaunchConfiguration("base_frame")
     fcu_frame = LaunchConfiguration("fcu_frame")
@@ -159,6 +171,7 @@ def generate_launch_description() -> LaunchDescription:
         PythonExpression(["'", use_dvl, "' == 'true' and '", dvl_launch_file, "' != ''"]))
     localization_enabled = IfCondition(PythonExpression(["'", use_localization, "' == 'true'"]))
     mavros_enabled = IfCondition(PythonExpression(["'", mavros_launch_file, "' != ''"]))
+    buoy_control_enabled = IfCondition(PythonExpression(["'", use_buoy_control, "' == 'true'"]))
 
     launch_actions = [
         # LogInfo(
@@ -294,6 +307,22 @@ def generate_launch_description() -> LaunchDescription:
             name="odom2mavros",
             output="screen",
             respawn=True,
+        ),
+        Node(
+            package="hit25_auv_ros2",
+            executable="buoy_position_control",
+            name="buoy_position_control",
+            output="screen",
+            respawn=True,
+            parameters=[
+                {"odom_topic": "/odometry/filtered"},
+                {"buoy_topic": buoy_topic},
+                {"arrival_radius": ParameterValue(buoy_arrival_radius, value_type=float)},
+                {"use_buoy_z": ParameterValue(use_buoy_z, value_type=bool)},
+                {"hold_mode": buoy_hold_mode},
+                {"guided_mode": buoy_guided_mode},
+            ],
+            condition=buoy_control_enabled,
         ),
         # 5) DroneCAN battery bridge
         Node(

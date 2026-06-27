@@ -59,6 +59,18 @@ ament_target_dependencies(localization_debug rclcpp geometry_msgs nav_msgs)
 add_executable(guided_control src/guided_control.cpp)
 ament_target_dependencies(guided_control rclcpp geometry_msgs tf2 mavros_msgs)
 
+add_executable(buoy_position_control src/buoy_position_control.cpp)
+ament_target_dependencies(
+  buoy_position_control
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  mavros_msgs
+)
+
 install(TARGETS
   cam2baselink_static_tf
   tf_broadcaster
@@ -69,6 +81,7 @@ install(TARGETS
   pressure_to_depth_pose
   localization_debug
   guided_control
+  buoy_position_control
   DESTINATION lib/${PROJECT_NAME}
 )
 
