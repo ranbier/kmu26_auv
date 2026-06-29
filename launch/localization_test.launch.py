@@ -30,6 +30,7 @@ def generate_launch_description() -> LaunchDescription:
     use_buoy_z = LaunchConfiguration("use_buoy_z")
     buoy_hold_mode = LaunchConfiguration("buoy_hold_mode")
     buoy_guided_mode = LaunchConfiguration("buoy_guided_mode")
+    enable_battery_dynamic_id_server = LaunchConfiguration("enable_battery_dynamic_id_server")
 
     rov_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(rov_launch_file),
@@ -40,6 +41,7 @@ def generate_launch_description() -> LaunchDescription:
             "use_buoy_z": use_buoy_z,
             "buoy_hold_mode": buoy_hold_mode,
             "buoy_guided_mode": buoy_guided_mode,
+            "enable_battery_dynamic_id_server": enable_battery_dynamic_id_server,
         }.items(),
     )
 
@@ -75,6 +77,7 @@ def generate_launch_description() -> LaunchDescription:
             DeclareLaunchArgument("use_buoy_z", default_value="false"),
             DeclareLaunchArgument("buoy_hold_mode", default_value="ALT_HOLD"),
             DeclareLaunchArgument("buoy_guided_mode", default_value="GUIDED"),
+            DeclareLaunchArgument("enable_battery_dynamic_id_server", default_value="true"),
             LogInfo(
                 msg=[
                     "[localization_test] Starting rov_start. Waiting ",

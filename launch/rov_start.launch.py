@@ -111,6 +111,7 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument("use_buoy_z", default_value="false"),
         DeclareLaunchArgument("buoy_hold_mode", default_value="ALT_HOLD"),
         DeclareLaunchArgument("buoy_guided_mode", default_value="GUIDED"),
+        DeclareLaunchArgument("enable_battery_dynamic_id_server", default_value="true"),
     ]
 
     fcu_url = LaunchConfiguration("fcu_url")
@@ -132,6 +133,7 @@ def generate_launch_description() -> LaunchDescription:
     use_buoy_z = LaunchConfiguration("use_buoy_z")
     buoy_hold_mode = LaunchConfiguration("buoy_hold_mode")
     buoy_guided_mode = LaunchConfiguration("buoy_guided_mode")
+    enable_battery_dynamic_id_server = LaunchConfiguration("enable_battery_dynamic_id_server")
 
     base_frame = LaunchConfiguration("base_frame")
     fcu_frame = LaunchConfiguration("fcu_frame")
@@ -332,6 +334,14 @@ def generate_launch_description() -> LaunchDescription:
             output="screen",
             respawn=True,
             prefix=dronecan_python,
+            parameters=[
+                {
+                    "enable_dynamic_id_server": ParameterValue(
+                        enable_battery_dynamic_id_server,
+                        value_type=bool,
+                    )
+                }
+            ],
         ),
     ]
 
