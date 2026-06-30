@@ -50,6 +50,16 @@ ament_target_dependencies(vfr2atm_pressure rclcpp mavros_msgs sensor_msgs)
 add_executable(dvl_to_twist_bridge src/dvl_to_twist_bridge.cpp)
 ament_target_dependencies(dvl_to_twist_bridge rclcpp geometry_msgs dvl_msgs)
 
+add_executable(dvl_position_to_odom_bridge src/dvl_position_to_odom_bridge.cpp)
+ament_target_dependencies(
+  dvl_position_to_odom_bridge
+  rclcpp
+  dvl_msgs
+  nav_msgs
+  tf2
+  tf2_geometry_msgs
+)
+
 add_executable(pressure_to_depth_pose src/pressure_to_depth_pose.cpp)
 ament_target_dependencies(pressure_to_depth_pose rclcpp geometry_msgs sensor_msgs)
 
@@ -78,6 +88,7 @@ install(TARGETS
   odom2mavros
   vfr2atm_pressure
   dvl_to_twist_bridge
+  dvl_position_to_odom_bridge
   pressure_to_depth_pose
   localization_debug
   guided_control

@@ -100,8 +100,29 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument("dvl_ip", default_value="192.168.194.95"),
         DeclareLaunchArgument("use_dvl", default_value="true"),
         DeclareLaunchArgument("dvl_launch_file", default_value=dvl_default),
+        DeclareLaunchArgument("configure_dvl_acoustic_on_startup", default_value="true"),
+        DeclareLaunchArgument("dvl_startup_acoustic_enabled", default_value="true"),
+        DeclareLaunchArgument("request_dvl_config_on_startup", default_value="true"),
         DeclareLaunchArgument("use_localization", default_value="true"),
         DeclareLaunchArgument("localization_params_file", default_value=localization_default),
+        DeclareLaunchArgument("dvl_twist_min_linear_variance", default_value="0.005"),
+        DeclareLaunchArgument("dvl_twist_max_linear_variance", default_value="1.0"),
+        DeclareLaunchArgument("dvl_twist_covariance_scale", default_value="1.0"),
+        DeclareLaunchArgument("dvl_twist_max_fom", default_value="0.05"),
+        DeclareLaunchArgument("dvl_twist_min_altitude", default_value="0.05"),
+        DeclareLaunchArgument("dvl_twist_min_valid_beams", default_value="4"),
+        DeclareLaunchArgument("use_dvl_position_odom", default_value="true"),
+        DeclareLaunchArgument("dvl_position_odom_topic", default_value="/dvl/odometry"),
+        DeclareLaunchArgument("dvl_position_frame", default_value="odom"),
+        DeclareLaunchArgument("dvl_position_child_frame", default_value="base_link"),
+        DeclareLaunchArgument("dvl_position_zero_on_start", default_value="true"),
+        DeclareLaunchArgument("dvl_position_zero_orientation_on_start", default_value="false"),
+        DeclareLaunchArgument("dvl_position_orientation_in_degrees", default_value="true"),
+        DeclareLaunchArgument("dvl_position_variance_xy", default_value="0.25"),
+        DeclareLaunchArgument("dvl_position_variance_z", default_value="100.0"),
+        DeclareLaunchArgument("dvl_position_max_norm", default_value="100.0"),
+        DeclareLaunchArgument("dvl_position_max_speed", default_value="2.0"),
+        DeclareLaunchArgument("dvl_position_reset_origin_on_jump", default_value="true"),
         DeclareLaunchArgument("pressure_topic", default_value="/mavros/imu/static_pressure"),
         DeclareLaunchArgument("pressure_input_mode", default_value="pressure_pa"),
         DeclareLaunchArgument("fluid_density", default_value="1000.0"),
@@ -118,8 +139,32 @@ def generate_launch_description() -> LaunchDescription:
     dvl_ip = LaunchConfiguration("dvl_ip")
     use_dvl = LaunchConfiguration("use_dvl")
     dvl_launch_file = LaunchConfiguration("dvl_launch_file")
+    configure_dvl_acoustic_on_startup = LaunchConfiguration("configure_dvl_acoustic_on_startup")
+    dvl_startup_acoustic_enabled = LaunchConfiguration("dvl_startup_acoustic_enabled")
+    request_dvl_config_on_startup = LaunchConfiguration("request_dvl_config_on_startup")
     use_localization = LaunchConfiguration("use_localization")
     localization_params_file = LaunchConfiguration("localization_params_file")
+    dvl_twist_min_linear_variance = LaunchConfiguration("dvl_twist_min_linear_variance")
+    dvl_twist_max_linear_variance = LaunchConfiguration("dvl_twist_max_linear_variance")
+    dvl_twist_covariance_scale = LaunchConfiguration("dvl_twist_covariance_scale")
+    dvl_twist_max_fom = LaunchConfiguration("dvl_twist_max_fom")
+    dvl_twist_min_altitude = LaunchConfiguration("dvl_twist_min_altitude")
+    dvl_twist_min_valid_beams = LaunchConfiguration("dvl_twist_min_valid_beams")
+    use_dvl_position_odom = LaunchConfiguration("use_dvl_position_odom")
+    dvl_position_odom_topic = LaunchConfiguration("dvl_position_odom_topic")
+    dvl_position_frame = LaunchConfiguration("dvl_position_frame")
+    dvl_position_child_frame = LaunchConfiguration("dvl_position_child_frame")
+    dvl_position_zero_on_start = LaunchConfiguration("dvl_position_zero_on_start")
+    dvl_position_zero_orientation_on_start = LaunchConfiguration(
+        "dvl_position_zero_orientation_on_start")
+    dvl_position_orientation_in_degrees = LaunchConfiguration(
+        "dvl_position_orientation_in_degrees")
+    dvl_position_variance_xy = LaunchConfiguration("dvl_position_variance_xy")
+    dvl_position_variance_z = LaunchConfiguration("dvl_position_variance_z")
+    dvl_position_max_norm = LaunchConfiguration("dvl_position_max_norm")
+    dvl_position_max_speed = LaunchConfiguration("dvl_position_max_speed")
+    dvl_position_reset_origin_on_jump = LaunchConfiguration(
+        "dvl_position_reset_origin_on_jump")
     pressure_topic = LaunchConfiguration("pressure_topic")
     pressure_input_mode = LaunchConfiguration("pressure_input_mode")
     fluid_density = LaunchConfiguration("fluid_density")
@@ -172,6 +217,12 @@ def generate_launch_description() -> LaunchDescription:
     dvl_enabled = IfCondition(
         PythonExpression(["'", use_dvl, "' == 'true' and '", dvl_launch_file, "' != ''"]))
     localization_enabled = IfCondition(PythonExpression(["'", use_localization, "' == 'true'"]))
+    dvl_position_odom_enabled = IfCondition(
+        PythonExpression([
+            "'", use_localization, "' == 'true' and '",
+            use_dvl, "' == 'true' and '",
+            use_dvl_position_odom, "' == 'true'",
+        ]))
     mavros_enabled = IfCondition(PythonExpression(["'", mavros_launch_file, "' != ''"]))
     buoy_control_enabled = IfCondition(PythonExpression(["'", use_buoy_control, "' == 'true'"]))
 
@@ -201,6 +252,9 @@ def generate_launch_description() -> LaunchDescription:
                 "ip_address": dvl_ip,
                 "velocity_frame_id": dvl_frame,
                 "position_frame_id": dvl_frame,
+                "configure_acoustic_on_startup": configure_dvl_acoustic_on_startup,
+                "startup_acoustic_enabled": dvl_startup_acoustic_enabled,
+                "request_config_on_startup": request_dvl_config_on_startup,
             }.items(),
             condition=dvl_enabled,
         ),
@@ -277,8 +331,54 @@ def generate_launch_description() -> LaunchDescription:
             name="dvl_to_twist_bridge",
             output="screen",
             respawn=True,
-            parameters=[{"output_frame_id": dvl_frame}],
+            parameters=[
+                {"output_frame_id": dvl_frame},
+                {
+                    "min_linear_variance": ParameterValue(
+                        dvl_twist_min_linear_variance, value_type=float),
+                    "max_linear_variance": ParameterValue(
+                        dvl_twist_max_linear_variance, value_type=float),
+                    "covariance_scale": ParameterValue(
+                        dvl_twist_covariance_scale, value_type=float),
+                    "max_fom": ParameterValue(dvl_twist_max_fom, value_type=float),
+                    "min_altitude": ParameterValue(
+                        dvl_twist_min_altitude, value_type=float),
+                    "min_valid_beams": ParameterValue(
+                        dvl_twist_min_valid_beams, value_type=int),
+                },
+            ],
             condition=localization_enabled,
+        ),
+        Node(
+            package="hit25_auv_ros2",
+            executable="dvl_position_to_odom_bridge",
+            name="dvl_position_to_odom_bridge",
+            output="screen",
+            respawn=True,
+            parameters=[
+                {
+                    "output_topic": dvl_position_odom_topic,
+                    "frame_id": dvl_position_frame,
+                    "child_frame_id": dvl_position_child_frame,
+                    "zero_position_on_start": ParameterValue(
+                        dvl_position_zero_on_start, value_type=bool),
+                    "zero_orientation_on_start": ParameterValue(
+                        dvl_position_zero_orientation_on_start, value_type=bool),
+                    "orientation_in_degrees": ParameterValue(
+                        dvl_position_orientation_in_degrees, value_type=bool),
+                    "position_variance_xy": ParameterValue(
+                        dvl_position_variance_xy, value_type=float),
+                    "position_variance_z": ParameterValue(
+                        dvl_position_variance_z, value_type=float),
+                    "max_position_norm": ParameterValue(
+                        dvl_position_max_norm, value_type=float),
+                    "max_position_speed": ParameterValue(
+                        dvl_position_max_speed, value_type=float),
+                    "reset_origin_on_jump": ParameterValue(
+                        dvl_position_reset_origin_on_jump, value_type=bool),
+                },
+            ],
+            condition=dvl_position_odom_enabled,
         ),
         Node(
             package="hit25_auv_ros2",

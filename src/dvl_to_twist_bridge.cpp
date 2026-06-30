@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <string>
 
 #include <dvl_msgs/msg/dvl.hpp>
@@ -16,6 +17,13 @@ public:
     output_topic_ = declare_parameter<std::string>("output_topic", "/dvl/twist");
     output_frame_id_ = declare_parameter<std::string>("output_frame_id", "dvl");
     default_linear_variance_ = declare_parameter<double>("default_linear_variance", 0.02);
+    min_linear_variance_ = declare_parameter<double>("min_linear_variance", 0.005);
+    max_linear_variance_ = declare_parameter<double>("max_linear_variance", 1.0);
+    covariance_scale_ = declare_parameter<double>("covariance_scale", 1.0);
+    max_fom_ = declare_parameter<double>("max_fom", 0.05);
+    min_altitude_ = declare_parameter<double>("min_altitude", 0.05);
+    min_valid_beams_ = declare_parameter<int>("min_valid_beams", 4);
+    use_dvl_covariance_ = declare_parameter<bool>("use_dvl_covariance", true);
     require_valid_velocity_ = declare_parameter<bool>("require_valid_velocity", true);
 
     const auto sensor_qos = rclcpp::SensorDataQoS();
@@ -29,6 +37,11 @@ public:
       get_logger(),
       "Bridging %s -> %s",
       input_topic_.c_str(), output_topic_.c_str());
+    RCLCPP_INFO(
+      get_logger(),
+      "DVL gates: min_var=%.4g max_var=%.4g cov_scale=%.3f max_fom=%.4g min_alt=%.3f min_beams=%d",
+      min_linear_variance_, max_linear_variance_, covariance_scale_, max_fom_,
+      min_altitude_, min_valid_beams_);
   }
 
 private:
@@ -38,6 +51,9 @@ private:
       RCLCPP_WARN_THROTTLE(
         get_logger(), *get_clock(), 2000,
         "Skipping DVL sample marked invalid.");
+      return;
+    }
+    if (!is_valid_measurement(*msg)) {
       return;
     }
 
@@ -54,27 +70,108 @@ private:
     auto & cov = out.twist.covariance;
     cov.fill(0.0);
 
-    if (msg->covariance.size() == 9) {
+    if (use_dvl_covariance_ && msg->covariance.size() == 9) {
       for (size_t row = 0; row < 3; ++row) {
         for (size_t col = 0; col < 3; ++col) {
-          cov[row * 6 + col] = msg->covariance[row * 3 + col];
+          cov[row * 6 + col] = msg->covariance[row * 3 + col] * covariance_scale_;
         }
       }
-    } else if (msg->covariance.size() == 36) {
-      std::copy(msg->covariance.begin(), msg->covariance.end(), cov.begin());
+    } else if (use_dvl_covariance_ && msg->covariance.size() == 36) {
+      for (size_t index = 0; index < cov.size(); ++index) {
+        cov[index] = msg->covariance[index] * covariance_scale_;
+      }
     } else {
       cov[0] = default_linear_variance_;
       cov[7] = default_linear_variance_;
       cov[14] = default_linear_variance_;
     }
 
+    if (has_rejected_covariance(cov)) {
+      RCLCPP_WARN_THROTTLE(
+        get_logger(), *get_clock(), 2000,
+        "Skipping DVL sample with excessive covariance.");
+      return;
+    }
+
+    cov[0] = sanitize_variance(cov[0]);
+    cov[7] = sanitize_variance(cov[7]);
+    cov[14] = sanitize_variance(cov[14]);
+
     publisher_->publish(out);
+  }
+
+  bool is_valid_measurement(const dvl_msgs::msg::DVL & msg)
+  {
+    const auto & velocity = msg.velocity;
+    if (!std::isfinite(velocity.x) || !std::isfinite(velocity.y) || !std::isfinite(velocity.z)) {
+      RCLCPP_WARN_THROTTLE(
+        get_logger(), *get_clock(), 2000,
+        "Skipping DVL sample with non-finite velocity.");
+      return false;
+    }
+
+    if (min_altitude_ > 0.0 && (!std::isfinite(msg.altitude) || msg.altitude < min_altitude_)) {
+      RCLCPP_WARN_THROTTLE(
+        get_logger(), *get_clock(), 2000,
+        "Skipping DVL sample with low/invalid altitude: %.3f m.", msg.altitude);
+      return false;
+    }
+
+    if (max_fom_ > 0.0 && (!std::isfinite(msg.fom) || msg.fom > max_fom_)) {
+      RCLCPP_WARN_THROTTLE(
+        get_logger(), *get_clock(), 2000,
+        "Skipping DVL sample with high FOM: %.6f.", msg.fom);
+      return false;
+    }
+
+    if (min_valid_beams_ > 0) {
+      const auto valid_beams = static_cast<int>(std::count_if(
+        msg.beams.begin(), msg.beams.end(),
+        [](const auto & beam) { return beam.valid; }));
+      if (valid_beams < min_valid_beams_) {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 2000,
+          "Skipping DVL sample with %d valid beams.", valid_beams);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  bool has_rejected_covariance(const std::array<double, 36> & cov) const
+  {
+    if (max_linear_variance_ <= 0.0) {
+      return false;
+    }
+    return exceeds_max_variance(cov[0]) || exceeds_max_variance(cov[7]) ||
+           exceeds_max_variance(cov[14]);
+  }
+
+  bool exceeds_max_variance(double value) const
+  {
+    return !std::isfinite(value) || value > max_linear_variance_;
+  }
+
+  double sanitize_variance(double value) const
+  {
+    if (!std::isfinite(value) || value <= 0.0) {
+      return min_linear_variance_;
+    }
+    return std::max(value, min_linear_variance_);
   }
 
   std::string input_topic_;
   std::string output_topic_;
   std::string output_frame_id_;
   double default_linear_variance_;
+  double min_linear_variance_;
+  double max_linear_variance_;
+  double covariance_scale_;
+  double max_fom_;
+  double min_altitude_;
+  int min_valid_beams_;
+  bool use_dvl_covariance_;
   bool require_valid_velocity_;
   rclcpp::Publisher<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr publisher_;
   rclcpp::Subscription<dvl_msgs::msg::DVL>::SharedPtr subscription_;
